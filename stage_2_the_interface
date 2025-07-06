@@ -1,0 +1,122 @@
+dominoes_game/
+├── dominoes.py (Entry point of the game <main.py>)                  <- Stage 1
+├── domino.py (Represents a single domino tile.)                     <- Stage 1
+├── player.py (Represents a player (human or AI).)
+├── game.py (Handles game logic, turns, and win conditions.)
+├── utils.py (Helper functions)                                      <- Stage 1
+└── display.py (Prints game state)                                   <- Stage 2
+
+############
+# display.py
+############
+def print_game_state(game_state):
+    print("=" * 70)
+    print(f"Stock size: {len(game_state['stock'])}")
+    print(f"Computer pieces: {len(game_state['computer'])}")
+    print()
+
+    # Print the domino snake
+    snake = game_state["snake"]
+    if len(snake) == 1:
+        print(snake[0])
+    else:
+        print("".join(str(d) for d in snake))
+    print()
+
+    # Print player's pieces
+    print("Your pieces:")
+    for idx, domino in enumerate(game_state["player"], 1):
+        print(f"{idx}:{domino}")
+    print()
+
+    # Print status
+    if game_state["turn"] == "player":
+        print("Status: It's your turn to make a move. Enter your command.")
+    else:
+        print("Status: Computer is about to make a move. Press Enter to continue...")
+
+
+##########
+# utils.py
+##########
+import random
+from domino import Domino
+
+def generate_domino_set():
+    return [Domino(i, j) for i in range(7) for j in range(i, 7)]
+
+def shuffle_and_split(domino_set):
+    for _ in range(4):
+        random.shuffle(domino_set)
+    player_pieces = domino_set[:7]
+    computer_pieces = domino_set[7:14]
+    stock_pieces = domino_set[14:]
+    return stock_pieces, computer_pieces, player_pieces
+
+def find_starting_piece(player_pieces, computer_pieces):
+    highest_double = None
+    starter = None
+
+    for value in reversed(range(7)):  # Check from [6,6] down to [0,0]
+        double = Domino(value, value)
+        if double in player_pieces:
+            highest_double = double
+            starter = "player"
+            break
+        elif double in computer_pieces:
+            highest_double = double
+            starter = "computer"
+            break
+
+    return highest_double, starter
+
+
+###########
+# domino.py
+###########
+class Domino:
+    def __init__(self, left: int, right: int):
+        self.left = left
+        self.right = right
+
+    def __repr__(self):
+        return f"[{self.left},{self.right}]"
+
+    def __eq__(self, other):
+        return (self.left, self.right) == (other.left, other.right)
+
+    def __hash__(self):
+        return hash((self.left, self.right))
+
+
+#######################
+# dominoes.py (main.py)
+#######################
+from utils import generate_domino_set, shuffle_and_split, find_starting_piece
+from display import print_game_state
+
+def setup_game():
+    while True:
+        full_set = generate_domino_set()
+        stock, computer, player = shuffle_and_split(full_set)
+        starting_piece, starter = find_starting_piece(player, computer)
+
+        if starting_piece:
+            if starter == "player":
+                player.remove(starting_piece)
+                first_turn = "computer"
+            else:
+                computer.remove(starting_piece)
+                first_turn = "player"
+
+            return {
+                "stock": stock,
+                "player": player,
+                "computer": computer,
+                "snake": [starting_piece],
+                "turn": first_turn
+            }
+
+if __name__ == "__main__":
+    game_state = setup_game()
+    print_game_state(game_state)
