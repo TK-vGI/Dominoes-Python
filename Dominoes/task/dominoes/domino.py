@@ -11,3 +11,6 @@ class Domino:
 
     def __hash__(self):
         return hash((self.left, self.right))
+
+    def flipped(self):
+        return Domino(self.right, self.left)

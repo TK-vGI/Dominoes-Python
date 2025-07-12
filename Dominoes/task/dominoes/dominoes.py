@@ -1,214 +1,41 @@
-import random
-
-
-class Domino:
-    def __init__(self, left: int, right: int):
-        self.left = left
-        self.right = right
-
-    def __repr__(self):
-        return f"[{self.left}, {self.right}]"
-
-    def __eq__(self, other):
-        return (self.left, self.right) == (other.left, other.right)
-
-    def __hash__(self):
-        return hash((self.left, self.right))
-
-    def flipped(self):
-        """Return a new Domino with left and right sides swapped."""
-        return Domino(self.right, self.left)
-
-
-def generate_domino_set():
-    """Generate a full domino set of 28 unique dominoes."""
-    return [Domino(i, j) for i in range(7) for j in range(i, 7)]
-
-
-def shuffle_and_split(domino_set):
-    """Shuffle the domino set and split into stock (14), computer (7), and player (7) pieces."""
-    for _ in range(4):
-        random.shuffle(domino_set)
-    return domino_set[:14], domino_set[14:21], domino_set[21:]
-
-
-def find_starting_piece(player_pieces, computer_pieces):
-    """Find the highest double domino and determine who starts."""
-    for value in range(6, -1, -1):  # Check from [6,6] to [0,0]
-        double = Domino(value, value)
-        if double in player_pieces:
-            return double, "computer"  # Computer starts if player has the double
-        if double in computer_pieces:
-            return double, "player"  # Player starts if computer has the double
-    return None, None
-
-
-def setup_game():
-    """Set up the game, reshuffling until a double is found."""
-    while True:
-        full_set = generate_domino_set()
-        stock, computer, player = shuffle_and_split(full_set)
-        starting_piece, starter = find_starting_piece(player, computer)
-        if starting_piece:  # Found a double
-            if starter == "computer":  # Player donates the double
-                player.remove(starting_piece)
-            else:  # starter == "player", Computer donates the double
-                computer.remove(starting_piece)
-            return {
-                "stock": stock,
-                "computer": computer,
-                "player": player,
-                "snake": [starting_piece],
-                "status": starter,
-                "turn": starter
-            }
-
-
-def print_snake(snake):
-    """Print the first and last three dominoes if snake length > 6, else print all."""
-    if len(snake) <= 6:
-        print("".join(str(domino) for domino in snake))
-    else:
-        print("".join(str(domino) for domino in snake[:3]) + "..." + "".join(str(domino) for domino in snake[-3:]))
-
-
-def print_game_state(game_state):
-    """Print the game state as specified in Stage 2."""
-    print("=" * 70)
-    print(f"Stock size: {len(game_state['stock'])}")
-    print(f"Computer pieces: {len(game_state['computer'])}")
-    print()
-    print_snake(game_state['snake'])
-    print()
-    print("Your pieces:")
-    for i, piece in enumerate(game_state['player'], 1):
-        print(f"{i}:{piece}")
-    print()
-    if game_state['status'] == "computer":
-        print("Status: Computer is about to make a move. Press Enter to continue...")
-    elif game_state['status'] == "player":
-        print("Status: It's your turn to make a move. Enter your command.")
-    else:
-        print(f"Status: The game is over. {game_state['status']}")
-
-
-def check_game_over(player, computer, snake):
-    """Check if the game is over: win (empty hand) or draw (snake ends match and value appears 8 times)."""
-    if not player:
-        return "You won!"
-    if not computer:
-        return "The computer won!"
-    if len(snake) >= 2:
-        left_end = snake[0].left
-        right_end = snake[-1].right
-        if left_end == right_end:
-            count = sum(1 for domino in snake for num in (domino.left, domino.right) if num == left_end)
-            if count >= 8:
-                return "It's a draw!"
-    return None
-
-
-def is_valid_move(index, hand, snake):
-    """Check if the move is valid: domino matches snake's left or right end."""
-    if index == 0:
-        return True  # Draw is always valid
-    if abs(index) > len(hand):
-        return False
-    domino = hand[abs(index) - 1]
-    left_end = snake[0].left
-    right_end = snake[-1].right
-    if index > 0:  # Place on right
-        return domino.left == right_end or domino.right == right_end
-    else:  # Place on left
-        return domino.right == left_end or domino.left == left_end
-
-
-def get_computer_move(hand, snake):
-    # Count frequency of each number in computer's hand and snake
-    number_counts = {i: 0 for i in range(7)}
-    for domino in hand:
-        number_counts[domino.left] += 1
-        number_counts[domino.right] += 1
-    for domino in snake:
-        number_counts[domino.left] += 1
-        number_counts[domino.right] += 1
-
-    # Get valid moves
-    valid_moves = [i for i in range(-len(hand), len(hand) + 1) if i != 0 and is_valid_move(i, hand, snake)]
-    if not valid_moves:
-        return 0  # Draw if no valid moves
-
-    # Score each valid move
-    move_scores = []
-    for index in valid_moves:
-        domino = hand[abs(index) - 1]
-        score = number_counts[domino.left] + number_counts[domino.right]
-        move_scores.append((index, score))
-
-   # Find max score
-    max_score = max(score for _, score in move_scores)
-    # Choose random move among those with max score
-    best_moves = [index for index, score in move_scores if score == max_score]
-    return random.choice(best_moves)
-
-
-def apply_move(index, hand, snake, stock):
-    """Apply a move: place domino on left/right or draw from stock, flipping if needed."""
-    if index == 0:
-        if stock:
-            hand.append(stock.pop())
-        return
-    domino = hand.pop(abs(index) - 1)
-    if index > 0:  # Place on right
-        if domino.left != snake[-1].right:
-            domino = domino.flipped()
-        snake.append(domino)
-    else:  # Place on left
-        if domino.right != snake[0].left:
-            domino = domino.flipped()
-        snake.insert(0, domino)
-
+from game import setup_game, check_game_over, is_valid_move, get_computer_move, apply_move
+from display import print_game_state
 
 def game_loop():
-    """Main game loop: handle player/computer moves until game ends."""
     game_state = setup_game()
-
     while True:
         result = check_game_over(game_state["player"], game_state["computer"], game_state["snake"])
         if result:
             game_state["status"] = result
             print_game_state(game_state)
             break
-
         print_game_state(game_state)
         if game_state["turn"] == "player":
             while True:
-                move = input()  # Match test input format
+                move = input()
                 try:
-                    move = int(move)  # Convert to integer
+                    move = int(move)
                     if abs(move) > len(game_state["player"]):
                         print("Invalid input. Please try again.")
                         continue
                     if not is_valid_move(move, game_state["player"], game_state["snake"]):
                         print("Illegal move. Please try again.")
                         continue
-                    break  # Exit loop after valid move or draw
+                    break
                 except ValueError:
                     print("Invalid input. Please try again.")
                     continue
-
             apply_move(move, game_state["player"], game_state["snake"], game_state["stock"])
             game_state["turn"] = "computer"
             game_state["status"] = "computer"
-
         else:
-            input()  # Wait for Enter
+            input()
             move = get_computer_move(game_state["computer"], game_state["snake"])
             apply_move(move, game_state["computer"], game_state["snake"], game_state["stock"])
             game_state["turn"] = "player"
             game_state["status"] = "player"
 
-
 if __name__ == "__main__":
-    random.seed()  # Ensure random shuffling
+    import random
+    random.seed()
     game_loop()

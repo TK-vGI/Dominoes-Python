@@ -1,7 +1,6 @@
 dominoes_game/
-├── dominoes.py (Entry point of the game <main.py>)                  <- Stage 1
-├── domino.py (Represents a single domino tile.)                     <- Stage 1
-├── player.py (Represents a player (human or AI).)
-├── game.py (Handles game logic, turns, and win conditions.)
-├── utils.py (Helper functions)                                      <- Stage 1
-└── display.py (Prints game state)                                   <- Stage 2
+├── dominoes.py (Entry point of the game. Handles the main game loop and initialization. <main.py>)
+├── domino.py (Represents a single domino tile.)
+├── game.py (Manages game setup, moves, and win conditions.)
+├── utils.py Contains utility functions for domino set generation and shuffling.)
+└── display.py (Handles all display-related functions.)
